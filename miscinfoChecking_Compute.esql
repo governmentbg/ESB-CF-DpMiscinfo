@@ -1,0 +1,89 @@
+
+
+
+
+CREATE COMPUTE MODULE "miscinfoChecking_Compute"
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+
+		DECLARE DpMiscinfo_PARS BOOLEAN 'TRUE';
+		DECLARE DpMiscinfo CHARACTER '';
+		DECLARE Egneik CHARACTER 'a';
+		
+		CALL CopyEntireMessage();
+		CALL CopyMessageHeaders();
+		CALL CopyLocalEvironment();
+/*
+		SET OutputLocalEnvironment.Variables.systemOID = SUBSTRING(SUBSTRING(InputRoot.HTTPInputHeader."Dp-Miscinfo" AFTER 'OID:') BEFORE '/');
+		SET OutputLocalEnvironment.Variables.CN = SUBSTRING(SUBSTRING(InputRoot.HTTPInputHeader."Dp-Miscinfo" AFTER 'CN=') BEFORE '|');
+		SET OutputLocalEnvironment.Variables.representedPersonID = SUBSTRING(SUBSTRING(InputRoot.HTTPInputHeader."Dp-Miscinfo" AFTER 'representedPersonID:') BEFORE '|');
+		SET OutputLocalEnvironment.Variables.correspondentOID = SUBSTRING(SUBSTRING(InputRoot.HTTPInputHeader."Dp-Miscinfo" AFTER 'correspondentOID:') BEFORE '|');
+		SET OutputLocalEnvironment.Variables.operatorID = SUBSTRING(InputRoot.HTTPInputHeader."Dp-Miscinfo" AFTER 'operatorID:');
+	*/
+		IF OutputLocalEnvironment.Variables.DpMiscinfo.headerValue IS NULL THEN
+			SET DpMiscinfo = InputRoot.HTTPInputHeader."Dp-Miscinfo";
+		ELSE 
+			SET DpMiscinfo = OutputLocalEnvironment.Variables.DpMiscinfo.headerValue;
+		END IF;
+		
+		SET OutputLocalEnvironment.Variables.DpMiscinfo.headerValue = DpMiscinfo;
+		
+		SET OutputLocalEnvironment.Variables.DpMiscinfo.OID = SUBSTRING(SUBSTRING(DpMiscinfo AFTER 'OID:') BEFORE '/');
+		SET OutputLocalEnvironment.Variables.DpMiscinfo.CN = SUBSTRING(SUBSTRING(DpMiscinfo AFTER 'CN=') BEFORE '|');
+		
+		SET Egneik = SUBSTRING(SUBSTRING(DpMiscinfo AFTER 'representedPersonID:') BEFORE '|');
+		
+		CASE SUBSTRING(Egneik FROM 1 FOR 3)
+		WHEN 'PNO' THEN 
+		 	SET OutputLocalEnvironment.Variables.DpMiscinfo.representedPersonID = SUBSTRING(Egneik FROM 7);
+		 	SET OutputLocalEnvironment.Variables.DpMiscinfo.representedPersonIDType = 'EGN';
+		WHEN 'NTR' THEN 
+			SET OutputLocalEnvironment.Variables.DpMiscinfo.representedPersonID = SUBSTRING(Egneik FROM 7);
+			SET OutputLocalEnvironment.Variables.DpMiscinfo.representedPersonIDType = 'EIK';
+		ELSE
+			SET OutputLocalEnvironment.Variables.DpMiscinfo.representedPersonID = Egneik;
+			SET OutputLocalEnvironment.Variables.DpMiscinfo.representedPersonIDType = 'EGN';
+		END CASE;
+				
+		SET OutputLocalEnvironment.Variables.DpMiscinfo.correspondentOID = SUBSTRING(SUBSTRING(DpMiscinfo AFTER 'correspondentOID:') BEFORE '|');
+		SET OutputLocalEnvironment.Variables.DpMiscinfo.operatorID = SUBSTRING(DpMiscinfo AFTER 'operatorID:');
+
+
+		SET  DpMiscinfo_PARS = DpMiscinfo_PARS AND (OutputLocalEnvironment.Variables.DpMiscinfo.OID IS NOT NULL);
+		SET  DpMiscinfo_PARS = DpMiscinfo_PARS AND (OutputLocalEnvironment.Variables.DpMiscinfo.CN IS NOT NULL);
+		SET  DpMiscinfo_PARS = DpMiscinfo_PARS AND (OutputLocalEnvironment.Variables.DpMiscinfo.representedPersonID IS NOT NULL);
+		SET  DpMiscinfo_PARS = DpMiscinfo_PARS AND (OutputLocalEnvironment.Variables.DpMiscinfo.correspondentOID IS NOT NULL);
+		SET  DpMiscinfo_PARS = DpMiscinfo_PARS AND (OutputLocalEnvironment.Variables.DpMiscinfo.operatorID IS NOT NULL);
+	/*	
+		IF DpMiscinfo_PARS THEN	
+			PROPAGATE TO TERMINAL 'out';
+		ELSE 
+			SET OutputLocalEnvironment.Destination.HTTP.ReplyStatusCode = 401;
+			SET OutputRoot.JSON.Data.failureOrigin = 'OAUTH';
+			SET OutputRoot.JSON.Data.cause[1].code = '401';
+			SET OutputRoot.JSON.Data.cause[1].message = 'Authentication parameter does not exist.';
+			PROPAGATE TO TERMINAL 'fault';
+		END IF;
+	*/	
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+	
+	CREATE PROCEDURE CopyLocalEvironment() BEGIN
+		SET OutputLocalEnvironment = InputLocalEnvironment;	
+	END;
+END MODULE;
+

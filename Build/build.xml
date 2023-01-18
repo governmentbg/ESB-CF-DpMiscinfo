@@ -1,0 +1,103 @@
+<project name="project" default="run">
+	<target name="run" description="Building ORN Archive Files">
+		<tstamp>
+		     <format property="time.stamp" pattern="ddMMyyyy"/>
+		</tstamp>
+		<property environment="env" />
+		<property file="${basedir}/build.properties" />
+		<property name="bar.file.build.path" value="${basedir}\out" />
+		<property name="bar.name" value="C:\Projects\DEV_ConnectorsAPI\GeneratedBarFiles\CallFlows_DpMiscinfo_${time.stamp}.generated.bar" />
+		<property name="test.bar.name" value="C:\Projects\DEV_ConnectorsAPI\GeneratedBarFiles\CallFlows_DpMiscinfo_${time.stamp}.test.bar" />
+		<property name="prod.bar.name" value="C:\Projects\DEV_ConnectorsAPI\GeneratedBarFiles\CallFlows_DpMiscinfo_${time.stamp}.prod.bar" />
+		
+		<antcall target="mqsicreatebar.build.project.bar" />
+		
+		<antcall target="deploy.test.bar.node1" />
+		<antcall target="deploy.test.bar.node2" />
+		
+		<!-- antcall target="deploy.prod.bar.node1" />
+		<antcall target="deploy.prod.bar.node2" / -->
+	</target>
+
+	<!-- Target to build the broker archive using mqsicreatebar -->
+
+	<target name="mqsicreatebar.build.project.bar">
+		<echo message="Build CallableFlow project BAR file ... " />
+		<exec executable="mqsicreatebar"
+			failifexecutionfails="true">
+			<arg value="-data" />
+			<arg value="${workspaces.dir}" />
+			<arg value="-b" />
+			<arg value="${bar.name}" />
+			<arg value="-a" />
+			<arg value="CallFlows_DpMiscinfo" />
+			<arg value="-trace" />
+			<!-- arg value="-deployAsSource" / -->
+		</exec>
+		<echo message="Completed building CallableFlow project BAR file: ${bar.name}." />
+	</target>
+	<target name="deploy.test.bar.node1">
+		<echo message="Deploy CallableFlow TEST BAR file to NODE1 ..." />
+		<exec executable="mqsideploy">
+			<arg value="-i" />
+			<arg value="${test.node.ip1}" />
+			<arg value="-p" />
+			<arg value="4414" />
+			<arg value="${test.nodes.name}" />
+			<arg value="-e" />
+			<arg value="${test.svrs.name}" />
+			<arg value="-a" />
+			<arg value="${bar.name}" />
+			<arg value="-w" />
+			<arg value="600" />
+		</exec>
+	</target>
+	<target name="deploy.test.bar.node2">
+		<echo message="Deploy CallableFlow TEST BAR file to NODE2 ..." />
+			<exec executable="mqsideploy">
+				<arg value="-i" />
+				<arg value="${test.node.ip2}" />
+				<arg value="-p" />
+				<arg value="4414" />
+				<arg value="${test.nodes.name}" />
+				<arg value="-e" />
+				<arg value="${test.svrs.name}" />
+				<arg value="-a" />
+				<arg value="${bar.name}" />
+				<arg value="-w" />
+				<arg value="600" />
+			</exec>
+		</target>
+		<target name="deploy.prod.bar.node1">
+			<echo message="Deploy CallableFlow PROD BAR file to NODE1 ..." />
+			<exec executable="mqsideploy">
+				<arg value="-i" />
+				<arg value="${prod.node.ip1}" />
+				<arg value="-p" />
+				<arg value="4414" />
+				<arg value="${prod.nodes.name}" />
+				<arg value="-e" />
+				<arg value="${prod.svrs.name}" />
+				<arg value="-a" />
+				<arg value="${prod.bar.name}" />
+				<arg value="-w" />
+				<arg value="600" />
+			</exec>
+		</target>
+		<target name="deploy.prod.bar.node2">
+			<echo message="Deploy CallableFlow PROD BAR file to NODE2 ..." />
+				<exec executable="mqsideploy">
+					<arg value="-i" />
+					<arg value="${prod.node.ip2}" />
+					<arg value="-p" />
+					<arg value="4414" />
+					<arg value="${prods.nodes.name}" />
+					<arg value="-e" />
+					<arg value="${prod.svrs.name}" />
+					<arg value="-a" />
+					<arg value="${prod.bar.name}" />
+					<arg value="-w" />
+					<arg value="600" />
+				</exec>
+			</target>
+</project> 
